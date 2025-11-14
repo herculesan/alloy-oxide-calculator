@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>合金 at% → wt% calculator </title>
+<style>
+    body { font-family: Arial; margin: 30px; }
+    table { border-collapse: collapse; width: 600px; }
+    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    button { margin-top: 10px; padding: 6px 12px; }
+</style>
+</head>
+<body>
+
+<h2> Metal-Oxide composition calcultor（at% → wt%）</h2>
+
+<table id="elementsTable">
+    <tr>
+        <th>元素</th>
+        <th>at%</th>
+        <th>wt%</th>
+    </tr>
+</table>
+
+<button onclick="addRow()">Add Composition </button>
+<button onclick="calculate()">Calculate wt%</button>
+
+<script>
+// 這裡將改為呼叫 API（下一步）
+const atomicWeights = {
+    "Co": 58.93, "Zr": 91.22, "Al": 26.98, "Cr": 52.00
+};
+
+function addRow() {
+    let table = document.getElementById("elementsTable");
+    let row = table.insertRow(-1);
+
+    let cell1 = row.insertCell(0);
+    let select = document.createElement("select");
+    for (let key in atomicWeights) {
+        let opt = document.createElement("option");
+        opt.value = key;
+        opt.innerHTML = key;
+        select.appendChild(opt);
+    }
+    cell1.appendChild(select);
+
+    let cell2 = row.insertCell(1);
+    let input = document.createElement("input");
+    input.type = "number";
+    input.value = 0;
+    input.min = 0;
+    cell2.appendChild(input);
+
+    row.insertCell(2).innerHTML = "-";
+}
+
+function calculate() {
+    alert("前端 UI 已完成，計算將在後端 API 實作（下一步）");
+}
+</script>
+
+</body>
+</html>
