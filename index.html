@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title> at% → wt% calculator </title>
+<title>Composition at% → wt% Calculator</title>
 <style>
     body { font-family: Arial; margin: 30px; }
     table { border-collapse: collapse; width: 600px; }
@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<h2> Metal-Oxide composition calcultor（at% → wt%）</h2>
+<h2>Metal Oxide Compostion Calculator（at% → wt%）</h2>
 
 <table id="elementsTable">
     <tr>
@@ -22,15 +22,20 @@
     </tr>
 </table>
 
-<button onclick="addRow()">Add Composition </button>
+<button onclick="addRow()">Add Composition</button>
 <button onclick="calculate()">Calculate wt%</button>
 
 <script>
-// 這裡將改為呼叫 API（下一步）
+// 原子量資料（你可自己增加）
 const atomicWeights = {
-    "Co": 58.9332, "Cr": 51.9961, "Pt": 195.084, "CoO": 74.933, "Cr2O3": 151.99,
+    "Co": 58.9332,
+    "Cr": 51.9961,
+    "Pt": 195.084,
+    "CoO": 74.933,
+    "Cr2O3": 151.99,
 };
 
+// 新增一行
 function addRow() {
     let table = document.getElementById("elementsTable");
     let row = table.insertRow(-1);
@@ -55,8 +60,28 @@ function addRow() {
     row.insertCell(2).innerHTML = "-";
 }
 
+// Calculate wt%
 function calculate() {
-    alert("前端 UI 已完成，計算將在後端 API 實作（下一步）");
+    let table = document.getElementById("elementsTable");
+    let rows = table.rows;
+
+    let numerator = [];  
+    let total = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+        let element = rows[i].cells[0].children[0].value;
+        let at = parseFloat(rows[i].cells[1].children[0].value);
+        let AW = atomicWeights[element];
+
+        let value = at * AW;
+        numerator.push(value);
+        total += value;
+    }
+
+    for (let i = 1; i < rows.length; i++) {
+        let wt = (numerator[i - 1] / total) * 100;
+        rows[i].cells[2].innerHTML = wt.toFixed(3) + "%";
+    }
 }
 </script>
 
