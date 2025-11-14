@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>at% → wt% Calculator</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght=300;400;500&display=swap" rel="stylesheet">
 
 <style>
     body {
@@ -58,7 +58,7 @@
         min-width: 80px;
     }
     
-    select, input[type=number], input[type=text] { /* 增加 input[type=text] */
+    select, input[type=number], input[type=text] {
         width: 100%;
         padding: 10px;
         border-radius: 6px;
@@ -107,7 +107,7 @@
         text-align: right;
     }
 
-    /* 新增字串生成區塊樣式 */
+    /* 字串生成區塊樣式 */
     .string-generator {
         margin-top: 30px;
         padding-top: 20px;
@@ -115,12 +115,22 @@
     }
 
     .string-output {
-        margin-top: 15px;
+        margin-top: 5px; /* 調整間距 */
         padding: 10px;
         background-color: #e9e9e9;
         border-radius: 6px;
         font-size: 16px;
         word-break: break-all;
+        font-weight: 500;
+    }
+    
+    .string-label {
+        margin-top: 15px;
+        font-weight: 500;
+    }
+
+    @media (max-width: 600px) {
+        button { width: 100%; }
     }
 </style>
 </head>
@@ -142,21 +152,20 @@
 
     <button class="btn-primary" onclick="addRow()">Add Composition</button>
     <button class="btn-normalize" onclick="autoNormalize()">Normalize to 100%</button>
-    <button class="btn-primary" onclick="calculate()">Calculate wt%</button>
+    <button class="btn-primary" onclick="calculateAndGenerate()">Calculate wt% & Generate String</button> 
 
     <div class="total-box">
         Total at%: <span id="totalAt">0</span>%
     </div>
 
     <div class="string-generator">
-        <h3>💬 自動生成字串 (例如: Ni 70 Pt 30)</h3>
-        <input type="text" id="compositionInput" placeholder="請輸入成分與比例 (例如: Ni 70 Pt 30 Ru 0.5)" onchange="generateString()">
+        <h3>💬 生成的成分字串</h3>
         
-        <p>at% 字串:</p>
-        <div class="string-output" id="atStringOutput">-</div>
+        <p class="string-label">at% 字串:</p>
+        <div class="string-output" id="atStringOutput">請先計算 wt%</div>
         
-        <p>wt% 字串:</p>
-        <div class="string-output" id="wtStringOutput">-</div>
+        <p class="string-label">wt% 字串:</p>
+        <div class="string-output" id="wtStringOutput">請先計算 wt%</div>
     </div>
     </div>
 
@@ -182,8 +191,6 @@ const atomicWeights = {
     "TiO2": 79.866,
     "BN": 24.817,
 };
-
-// ... (以下是原本的函數，為保持程式碼簡潔不重複貼上，但在實際檔案中需保留) ...
 
 function addRow() {
     let table = document.getElementById("elementsTable");
@@ -251,105 +258,74 @@ function autoNormalize() {
     updateTotalAt();
 }
 
-function calculate() {
-    let rows = document.getElementById("elementsTable").rows;
-
-    let nums = [], total = 0;
-    for (let i = 1; i < rows.length; i++) {
-        let elm = rows[i].cells[0].children[0].value;
-        let at = parseFloat(rows[i].cells[1].children[0].value);
-        let AW = atomicWeights[elm];
-        let v = at * AW;
-        nums.push(v);
-        total += v;
-    }
-
-    for (let i = 1; i < rows.length; i++) {
-        let wt = (nums[i - 1] / total) * 100;
-        rows[i].cells[2].innerHTML = wt.toFixed(3) + "%";
-    }
-}
-// 預設新增一行
-addRow();
-
-
 /**
- * 解析輸入字串 (例如: Ni 70 Pt 30)，計算 wt%，並生成 at% 和 wt% 字串。
+ * 核心功能：計算 wt%，同時生成 at% 和 wt% 字串。
  */
-function generateString() {
-    const input = document.getElementById("compositionInput").value.trim();
-    const parts = input.match(/([a-zA-Z0-9]+)\s*(\d+(\.\d+)?)/g); // 匹配元素和數字
+function calculateAndGenerate() {
+    let rows = document.getElementById("elementsTable").rows;
+    if (rows.length <= 1) { // 只有標題行
+        document.getElementById("atStringOutput").innerHTML = "請新增成分。";
+        document.getElementById("wtStringOutput").innerHTML = "請新增成分。";
+        return;
+    }
 
-    const atCompositions = [];
-    let totalAt = 0;
+    let nums = [];
+    let compositions = [];
     let totalAW = 0;
-
-    if (!parts || parts.length === 0) {
-        document.getElementById("atStringOutput").innerHTML = "輸入格式錯誤或為空。";
-        document.getElementById("wtStringOutput").innerHTML = "-";
-        return;
-    }
-
-    // 1. 解析成分和 at%，計算總和
-    for (const part of parts) {
-        const match = part.match(/([a-zA-Z0-9]+)\s*(\d+(\.\d+)?)/);
-        if (match) {
-            const element = match[1];
-            const at = parseFloat(match[2]);
-
-            if (isNaN(at) || at <= 0 || !(element in atomicWeights)) {
-                document.getElementById("atStringOutput").innerHTML = "成分或比例無效 (請檢查元素名稱或 at% 值)。";
-                document.getElementById("wtStringOutput").innerHTML = "-";
-                return;
-            }
-
-            atCompositions.push({ element, at });
-            totalAt += at;
-        }
-    }
-
-    if (totalAt === 0) {
-        document.getElementById("atStringOutput").innerHTML = "at% 總和為零。";
-        document.getElementById("wtStringOutput").innerHTML = "-";
-        return;
-    }
-
-    // 2. 正規化 at% 並計算 wt% 相關數值 (at * AW)
-    const normalizedCompositions = [];
     const precision = 3; // 小數位數
 
-    for (const comp of atCompositions) {
-        const normalizedAt = (comp.at / totalAt) * 100;
-        const AW = atomicWeights[comp.element];
-        const at_times_AW = normalizedAt * AW;
+    // 1. 收集數據並計算 at% * AW
+    for (let i = 1; i < rows.length; i++) {
+        const elm = rows[i].cells[0].children[0].value;
+        const at = parseFloat(rows[i].cells[1].children[0].value);
         
-        normalizedCompositions.push({
-            element: comp.element,
-            at: normalizedAt,
-            at_times_AW: at_times_AW
-        });
+        if (isNaN(at) || at <= 0 || !(elm in atomicWeights)) {
+             document.getElementById("atStringOutput").innerHTML = "錯誤：無效的 at% 或成分。";
+             document.getElementById("wtStringOutput").innerHTML = "錯誤：無效的 at% 或成分。";
+             rows[i].cells[2].innerHTML = "錯誤";
+             return;
+        }
+        
+        const AW = atomicWeights[elm];
+        const at_times_AW = at * AW;
+        
+        nums.push(at_times_AW);
+        compositions.push({ element: elm, at: at });
         totalAW += at_times_AW;
     }
     
-    // 3. 計算 wt% 並生成字串
-    let atString = [];
-    let wtString = [];
-    
-    for (const comp of normalizedCompositions) {
-        // at% 字串格式: 70Ni-30Pt
-        atString.push(`${comp.at.toFixed(precision).replace(/\.?0+$/, '')}${comp.element}`);
-
-        // wt% 計算
-        const wt = (comp.at_times_AW / totalAW) * 100;
-        
-        // wt% 字串格式: 85.45Ni-14.55Pt
-        wtString.push(`${wt.toFixed(precision).replace(/\.?0+$/, '')}${comp.element}`);
+    // 如果總和為零
+    if (totalAW === 0) {
+        document.getElementById("atStringOutput").innerHTML = "at% * AW 總和為零。";
+        document.getElementById("wtStringOutput").innerHTML = "at% * AW 總和為零。";
+        return;
     }
 
-    // 4. 輸出結果
-    document.getElementById("atStringOutput").innerHTML = `${atString.join('-')} at%`;
-    document.getElementById("wtStringOutput").innerHTML = `${wtString.join('-')} wt%`;
+    // 2. 計算 wt% 並生成字串
+    let atStringParts = [];
+    let wtStringParts = [];
+
+    for (let i = 1; i < rows.length; i++) {
+        const wt = (nums[i - 1] / totalAW) * 100;
+        
+        // 更新表格中的 wt% 欄位
+        rows[i].cells[2].innerHTML = wt.toFixed(precision) + "%";
+        
+        // at% 字串格式 (使用表格中的 at% 值，去除尾隨零): 70Ni-30Pt
+        const atValue = compositions[i - 1].at;
+        atStringParts.push(`${atValue.toFixed(precision).replace(/\.?0+$/, '')}${compositions[i - 1].element}`);
+
+        // wt% 字串格式 (使用計算出的 wt% 值，去除尾隨零): 85.45Ni-14.55Pt
+        wtStringParts.push(`${wt.toFixed(precision).replace(/\.?0+$/, '')}${compositions[i - 1].element}`);
+    }
+    
+    // 3. 輸出結果
+    document.getElementById("atStringOutput").innerHTML = `${atStringParts.join('-')} at%`;
+    document.getElementById("wtStringOutput").innerHTML = `${wtStringParts.join('-')} wt%`;
 }
+
+// 確保網頁載入時至少有一行
+addRow();
 </script>
 
 </body>
