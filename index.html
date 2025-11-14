@@ -2,18 +2,35 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>Composition at% → wt% Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>at% → wt% Calculator</title>
+
+<!-- Google Material Design CSS -->
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
-    body { 
-        font-family: Arial; 
-        margin: 20px; 
-        max-width: 800px; 
+    body {
+        font-family: "Roboto", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
     }
 
-    h2 { font-size: 20px; text-align: center; }
+    .container {
+        max-width: 900px;
+        margin: 40px auto;
+        background: white;
+        padding: 24px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
 
-    /* 讓表格在手機上可左右滑動 */
+    h2 {
+        font-weight: 500;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
     .table-container {
         overflow-x: auto;
     }
@@ -21,76 +38,105 @@
     table {
         border-collapse: collapse;
         width: 100%;
-        min-width: 550px;
+        min-width: 650px;
     }
 
-    td, th {
-        border: 1px solid #ccc;
-        padding: 8px;
+    th, td {
+        padding: 12px;
         text-align: center;
+        border-bottom: 1px solid #ddd;
     }
 
     select, input[type=number] {
-        width: 95%;
-        padding: 6px;
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
         font-size: 16px;
     }
 
     button {
-        margin: 8px 4px;
-        padding: 10px 16px;
-        font-size: 16px;
         border: none;
-        border-radius: 6px;
-        background-color: #0066cc;
+        padding: 12px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        margin: 8px 4px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #1976d2;
         color: white;
     }
 
-    button.delete-btn {
-        background-color: #cc0000;
+    .btn-primary:hover {
+        background-color: #0d47a1;
+    }
+
+    .btn-normalize {
+        background-color: #00796b;
+        color: white;
+    }
+
+    .btn-normalize:hover {
+        background-color: #004d40;
+    }
+
+    .btn-delete {
+        background-color: #d32f2f;
+        color: white;
         padding: 6px 10px;
     }
 
+    .total-box {
+        margin-top: 10px;
+        font-size: 18px;
+        font-weight: 500;
+        text-align: right;
+    }
+
     @media (max-width: 600px) {
-        h2 { font-size: 18px; }
         button { width: 100%; }
     }
 </style>
 </head>
 <body>
 
-<h2>Metal Oxide Composition Calculator（at% → wt%）</h2>
+<div class="container">
+    <h2>Metal Oxide Composition Calculator（at% → wt%）</h2>
 
-<div class="table-container">
-<table id="elementsTable">
-    <tr>
-        <th>Composition</th>
-        <th>at%</th>
-        <th>wt%</th>
-        <th>Delete</th>
-    </tr>
-</table>
+    <div class="table-container">
+    <table id="elementsTable">
+        <tr>
+            <th>Composition</th>
+            <th>at%</th>
+            <th>wt%</th>
+            <th>Delete</th>
+        </tr>
+    </table>
+    </div>
+
+    <button class="btn-primary" onclick="addRow()">Add Composition</button>
+    <button class="btn-normalize" onclick="autoNormalize()">Normalize to 100%</button>
+    <button class="btn-primary" onclick="calculate()">Calculate wt%</button>
+
+    <div class="total-box">
+        Total at%: <span id="totalAt">0</span>%
+    </div>
 </div>
 
-<button onclick="addRow()">Add Composition</button>
-<button onclick="autoNormalize()">Normalize to 100%</button>
-<button onclick="calculate()">Calculate wt%</button>
-
-<h3>Total at%: <span id="totalAt">0</span>%</h3>
-
 <script>
-// 原子量資料
+// Atomic weights
 const atomicWeights = {
     "Al": 26.9815,
     "B": 10.81,
     "Co": 58.9332,
     "Cr": 51.9961,
     "Fe": 55.845,
-    "Mo": 95.96,
     "Ni": 58.6934,
     "Pt": 195.084,
     "Ru": 101.07,
-    "Ta": 180.948,
     "Ti": 47.867,
     "W": 183.84,
     "B2O3": 69.618,
@@ -103,14 +149,13 @@ const atomicWeights = {
     "BN": 24.817,
 };
 
-// 新增一行
 function addRow() {
     let table = document.getElementById("elementsTable");
     let row = table.insertRow(-1);
 
+    // Composition
     let cell1 = row.insertCell(0);
     let select = document.createElement("select");
-
     for (let key in atomicWeights) {
         let opt = document.createElement("option");
         opt.value = key;
@@ -119,7 +164,7 @@ function addRow() {
     }
     cell1.appendChild(select);
 
-    // at% 欄位
+    // at%
     let cell2 = row.insertCell(1);
     let input = document.createElement("input");
     input.type = "number";
@@ -128,39 +173,36 @@ function addRow() {
     input.oninput = updateTotalAt;
     cell2.appendChild(input);
 
-    row.insertCell(2).innerHTML = "-"; // wt%
+    // wt%
+    row.insertCell(2).innerHTML = "-";
 
-    // delete 按鈕
+    // delete
     let cell4 = row.insertCell(3);
     let del = document.createElement("button");
-    del.className = "delete-btn";
+    del.className = "btn-delete";
     del.innerHTML = "X";
     del.onclick = () => { row.remove(); updateTotalAt(); };
     cell4.appendChild(del);
 }
 
-// 計算 at% 總和
 function updateTotalAt() {
-    let table = document.getElementById("elementsTable");
-    let rows = table.rows;
+    let rows = document.getElementById("elementsTable").rows;
     let total = 0;
 
     for (let i = 1; i < rows.length; i++) {
-        let val = parseFloat(rows[i].cells[1].children[0].value);
-        total += isNaN(val) ? 0 : val;
+        let v = parseFloat(rows[i].cells[1].children[0].value);
+        total += isNaN(v) ? 0 : v;
     }
 
     document.getElementById("totalAt").innerHTML = total.toFixed(3);
     return total;
 }
 
-// Normalize: 讓 at% 自動變成總和 100
 function autoNormalize() {
     let total = updateTotalAt();
     if (total === 0) return;
 
-    let table = document.getElementById("elementsTable");
-    let rows = table.rows;
+    let rows = document.getElementById("elementsTable").rows;
 
     for (let i = 1; i < rows.length; i++) {
         let input = rows[i].cells[1].children[0];
@@ -171,25 +213,21 @@ function autoNormalize() {
     updateTotalAt();
 }
 
-// 計算 wt%
 function calculate() {
-    let table = document.getElementById("elementsTable");
-    let rows = table.rows;
+    let rows = document.getElementById("elementsTable").rows;
 
-    let numList = [];
-    let total = 0;
-
+    let nums = [], total = 0;
     for (let i = 1; i < rows.length; i++) {
-        let element = rows[i].cells[0].children[0].value;
+        let elm = rows[i].cells[0].children[0].value;
         let at = parseFloat(rows[i].cells[1].children[0].value);
-        let AW = atomicWeights[element];
-        let value = at * AW;
-        numList.push(value);
-        total += value;
+        let AW = atomicWeights[elm];
+        let v = at * AW;
+        nums.push(v);
+        total += v;
     }
 
     for (let i = 1; i < rows.length; i++) {
-        let wt = (numList[i - 1] / total) * 100;
+        let wt = (nums[i - 1] / total) * 100;
         rows[i].cells[2].innerHTML = wt.toFixed(3) + "%";
     }
 }
