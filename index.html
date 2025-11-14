@@ -3,27 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <title>Composition at% → wt% Calculator</title>
+
 <style>
-    body { font-family: Arial; margin: 30px; }
-    table { border-collapse: collapse; width: 600px; }
-    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    button { margin-top: 10px; padding: 6px 12px; }
+    body { 
+        font-family: Arial; 
+        margin: 20px; 
+        max-width: 800px; 
+    }
+
+    h2 { font-size: 20px; text-align: center; }
+
+    /* 讓表格在手機上可左右滑動 */
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 550px;
+    }
+
+    td, th {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+    }
+
+    select, input[type=number] {
+        width: 95%;
+        padding: 6px;
+        font-size: 16px;
+    }
+
+    button {
+        margin: 8px 4px;
+        padding: 10px 16px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        background-color: #0066cc;
+        color: white;
+    }
+
+    button.delete-btn {
+        background-color: #cc0000;
+        padding: 6px 10px;
+    }
+
+    @media (max-width: 600px) {
+        h2 { font-size: 18px; }
+        button { width: 100%; }
+    }
 </style>
 </head>
 <body>
 
-<h2>Metal Oxide Compostion Calculator（at% → wt%）</h2>
+<h2>Metal Oxide Composition Calculator（at% → wt%）</h2>
 
+<div class="table-container">
 <table id="elementsTable">
     <tr>
         <th>Composition</th>
         <th>at%</th>
         <th>wt%</th>
+        <th>Delete</th>
     </tr>
 </table>
+</div>
 
 <button onclick="addRow()">Add Composition</button>
+<button onclick="autoNormalize()">Normalize to 100%</button>
 <button onclick="calculate()">Calculate wt%</button>
+
+<h3>Total at%: <span id="totalAt">0</span>%</h3>
 
 <script>
 // 原子量資料
@@ -57,6 +110,7 @@ function addRow() {
 
     let cell1 = row.insertCell(0);
     let select = document.createElement("select");
+
     for (let key in atomicWeights) {
         let opt = document.createElement("option");
         opt.value = key;
@@ -65,36 +119,77 @@ function addRow() {
     }
     cell1.appendChild(select);
 
+    // at% 欄位
     let cell2 = row.insertCell(1);
     let input = document.createElement("input");
     input.type = "number";
     input.value = 0;
     input.min = 0;
+    input.oninput = updateTotalAt;
     cell2.appendChild(input);
 
-    row.insertCell(2).innerHTML = "-";
+    row.insertCell(2).innerHTML = "-"; // wt%
+
+    // delete 按鈕
+    let cell4 = row.insertCell(3);
+    let del = document.createElement("button");
+    del.className = "delete-btn";
+    del.innerHTML = "X";
+    del.onclick = () => { row.remove(); updateTotalAt(); };
+    cell4.appendChild(del);
 }
 
-// Calculate wt%
+// 計算 at% 總和
+function updateTotalAt() {
+    let table = document.getElementById("elementsTable");
+    let rows = table.rows;
+    let total = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+        let val = parseFloat(rows[i].cells[1].children[0].value);
+        total += isNaN(val) ? 0 : val;
+    }
+
+    document.getElementById("totalAt").innerHTML = total.toFixed(3);
+    return total;
+}
+
+// Normalize: 讓 at% 自動變成總和 100
+function autoNormalize() {
+    let total = updateTotalAt();
+    if (total === 0) return;
+
+    let table = document.getElementById("elementsTable");
+    let rows = table.rows;
+
+    for (let i = 1; i < rows.length; i++) {
+        let input = rows[i].cells[1].children[0];
+        let val = parseFloat(input.value);
+        input.value = ((val / total) * 100).toFixed(3);
+    }
+
+    updateTotalAt();
+}
+
+// 計算 wt%
 function calculate() {
     let table = document.getElementById("elementsTable");
     let rows = table.rows;
 
-    let numerator = [];  
+    let numList = [];
     let total = 0;
 
     for (let i = 1; i < rows.length; i++) {
         let element = rows[i].cells[0].children[0].value;
         let at = parseFloat(rows[i].cells[1].children[0].value);
         let AW = atomicWeights[element];
-
         let value = at * AW;
-        numerator.push(value);
+        numList.push(value);
         total += value;
     }
 
     for (let i = 1; i < rows.length; i++) {
-        let wt = (numerator[i - 1] / total) * 100;
+        let wt = (numList[i - 1] / total) * 100;
         rows[i].cells[2].innerHTML = wt.toFixed(3) + "%";
     }
 }
